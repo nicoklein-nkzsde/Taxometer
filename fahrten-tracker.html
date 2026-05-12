@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Fahrten" />
+  <meta name="theme-color" content="#080808" />
+  <title>Fahrten Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #080808;
+      --surface:   #111111;
+      --surface2:  #181818;
+      --surface3:  #202020;
+      --border:    #242424;
+      --border2:   #2e2e2e;
+      --accent:    #d4a843;
+      --accent-lo: rgba(212,168,67,0.10);
+      --orange:    #e05c2a;
+      --orange-lo: rgba(224,92,42,0.10);
+      --text:      #eeeeee;
+      --text-2:    #888888;
+      --text-3:    #444444;
+      --red:       #e03030;
+      --green:     #2ecc71;
+      --safe-b:    env(safe-area-inset-bottom, 0px);
+      --safe-t:    env(safe-area-inset-top, 0px);
+      --r:         14px;
+      --r-sm:      9px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      height: 100%;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 430px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      padding: calc(var(--safe-t) + 18px) 24px 18px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .header-left .eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+    .header-left h1 {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .header-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-2);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      display: flex;
+      gap: 2px;
+      padding: 0 20px 16px;
+      flex-shrink: 0;
+    }
+    nav button {
+      flex: 1;
+      padding: 9px 0;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: var(--r-sm);
+      color: var(--text-3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    nav button.active {
+      background: var(--surface2);
+      border-color: var(--border2);
+      color: var(--text);
+    }
+
+    /* ─── SCROLL AREA ─── */
+    .view {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 16px calc(24px + var(--safe-b));
+      display: none;
+    }
+    .view.active { display: block; }
+
+    .sec-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin: 20px 4px 8px;
+    }
+
+    /* ─── MODE TOGGLE ─── */
+    .mode-toggle {
+      display: flex;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 11px 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      background: none;
+      color: var(--text-2);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .mode-btn.active.privat {
+      background: var(--accent-lo);
+      border-color: rgba(212,168,67,0.22);
+      color: var(--accent);
+    }
+    .mode-btn.active.auftrag {
+      background: var(--orange-lo);
+      border-color: rgba(224,92,42,0.22);
+      color: var(--orange);
+    }
+
+    /* ─── TRACKER CARD ─── */
+    .tracker-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .km-display {
+      padding: 32px 24px 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .km-num-wrap {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .km-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 80px;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--text);
+      transition: color 0.3s;
+    }
+    .km-num.recording { color: var(--accent); }
+    .km-unit {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-3);
+      padding-bottom: 8px;
+    }
+    .cost-live {
+      font-family: 'DM Mono', monospace;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-3);
+      transition: color 0.3s;
+      letter-spacing: -0.02em;
+    }
+    .cost-live.recording { color: var(--orange); }
+
+    .btn-record-wrap { padding: 14px 14px 0; }
+    .btn-record {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-record.start { background: var(--accent); color: #000; }
+    .btn-record.start:active { filter: brightness(0.88); }
+    .btn-record.stop {
+      background: var(--red);
+      color: #fff;
+      animation: pulse-red 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-red {
+      0%,100% { box-shadow: 0 0 0 0 rgba(224,48,48,0.35); }
+      50%      { box-shadow: 0 0 0 10px rgba(224,48,48,0); }
+    }
+
+    .gps-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 16px 14px;
+    }
+    .gps-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-3);
+      flex-shrink: 0;
+    }
+    .gps-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .gps-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-3);
+    }
+
+    .stats-row {
+      display: flex;
+      border-top: 1px solid var(--border);
+    }
+    .stat-cell {
+      flex: 1;
+      padding: 14px 0;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
+    .stat-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ─── MANUAL ─── */
+    .manual-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .manual-card input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.15s;
+    }
+    .manual-card input::placeholder { color: var(--text-3); }
+    .manual-card input:focus { border-color: var(--border2); }
+    .btn-save-manual {
+      padding: 12px 18px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r-sm);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .btn-save-manual:active { background: var(--surface3); }
+
+    /* ─── HISTORY ─── */
+    .summary-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .summary-cell {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 16px;
+    }
+    .sc-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
+    .sc-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .trip-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .trip-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .trip-dot.privat { background: var(--accent); }
+    .trip-dot.auftrag { background: var(--orange); }
+    .trip-info { flex: 1; min-width: 0; }
+    .trip-date { font-size: 11px; font-weight: 500; color: var(--text-3); margin-bottom: 2px; }
+    .trip-km { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--text); }
+    .trip-mode-tag {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 2px 7px; border-radius: 4px;
+      display: inline-block; margin-top: 3px;
+    }
+    .trip-mode-tag.privat { background: var(--accent-lo); color: var(--accent); }
+    .trip-mode-tag.auftrag { background: var(--orange-lo); color: var(--orange); }
+    .trip-right { text-align: right; }
+    .trip-cost { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); }
+    .trip-rate { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .btn-del {
+      background: none; border: none; color: var(--text-3);
+      font-size: 14px; cursor: pointer; padding: 6px 4px;
+      flex-shrink: 0; transition: color 0.15s;
+    }
+    .btn-del:active { color: var(--red); }
+
+    .empty-state { text-align: center; padding: 64px 20px; color: var(--text-3); }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-text { font-size: 14px; font-weight: 500; }
+
+    /* ─── SETTINGS ─── */
+    .settings-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .settings-group-label {
+      padding: 12px 16px 0;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .s-title { font-size: 14px; font-weight: 500; color: var(--text); }
+    .s-desc { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .setting-input-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .setting-input-wrap input {
+      width: 72px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      text-align: right;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.15s;
+    }
+    .setting-input-wrap input:focus { border-color: var(--border2); }
+    .setting-input-wrap input[readonly] { color: var(--text-3); }
+    .s-unit { font-size: 12px; font-weight: 500; color: var(--text-3); min-width: 28px; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--r);
+      color: #000;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: filter 0.15s;
+      margin-bottom: 8px;
+    }
+    .btn-primary:active { filter: brightness(0.88); }
+    .btn-danger {
+      width: 100%;
+      padding: 15px;
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      color: var(--red);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-danger:active { background: rgba(224,48,48,0.08); }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    /* ─── TOAST ─── */
+    #toast {
+      position: fixed;
+      bottom: calc(28px + var(--safe-b));
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      opacity: 0;
+      transition: opacity 0.22s, transform 0.22s;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="header-left">
+      <div class="eyebrow">NKZS Production</div>
+      <h1>Fahrten</h1>
+    </div>
+    <div class="header-badge" id="header-badge">0,30 €/km</div>
+  </header>
+
+  <nav>
+    <button class="active" onclick="showView('tracker', this)">Fahrt</button>
+    <button onclick="showView('history', this)">Verlauf</button>
+    <button onclick="showView('settings', this)">Einstellungen</button>
+  </nav>
+
+  <!-- TRACKER -->
+  <div class="view active" id="view-tracker">
+
+    <div class="mode-toggle">
+      <button class="mode-btn active privat" id="btn-privat" onclick="setMode('privat')">🚗 Privat</button>
+      <button class="mode-btn auftrag" id="btn-auftrag" onclick="setMode('auftrag')">💼 Auftrag</button>
+    </div>
+
+    <div class="tracker-card">
+      <div class="km-display">
+        <div class="km-num-wrap">
+          <div class="km-num" id="km-num">0.0</div>
+          <div class="km-unit">km</div>
+        </div>
+        <div class="cost-live" id="cost-live">0,00 €</div>
+      </div>
+
+      <div class="btn-record-wrap">
+        <button class="btn-record start" id="btn-record" onclick="toggleRecording()">
+          <span id="btn-icon">▶</span>
+          <span id="btn-label">Fahrt starten</span>
+        </button>
+      </div>
+
+      <div class="gps-row">
+        <div class="gps-dot" id="gps-dot"></div>
+        <div class="gps-label" id="gps-label">GPS bereit</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-label">Dauer</div>
+          <div class="stat-val" id="duration">00:00</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">€ / km</div>
+          <div class="stat-val" id="rate-display">0,30</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Modus</div>
+          <div class="stat-val" id="mode-display">Priv.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-label">Manuell</div>
+    <div class="manual-card">
+      <input type="number" id="manual-km" placeholder="km" min="0" step="0.1" />
+      <button class="btn-save-manual" onclick="addManual()">Speichern</button>
+    </div>
+
+  </div>
+
+  <!-- HISTORY -->
+  <div class="view" id="view-history">
+    <div class="sec-label">Übersicht</div>
+    <div class="summary-row">
+      <div class="summary-cell">
+        <div class="sc-label">Fahrten</div>
+        <div class="sc-val" id="total-count">0</div>
+      </div>
+      <div class="summary-cell">
+        <div class="sc-label">Gesamt km</div>
+        <div class="sc-val" id="total-km">0.0</div>
+      </div>
+      <div class="summary-cell">
+        <div class="sc-label">Gesamt €</div>
+        <div class="sc-val" id="total-eur">0,00</div>
+      </div>
+    </div>
+    <div class="sec-label">Fahrten</div>
+    <div id="trip-list"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="view" id="view-settings">
+
+    <div class="sec-label">Privat</div>
+    <div class="settings-group">
+      <div class="setting-row">
+        <div>
+          <div class="s-title">Kosten pro km</div>
+          <div class="s-desc">Tank + Verschleiß</div>
+        </div>
+        <div class="setting-input-wrap">
+          <input type="number" id="s-privat-km" value="0.30" step="0.01" min="0" />
+          <span class="s-unit">€</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-label">Auftrag</div>
+    <div class="settings-group">
+      <div class="setting-row">
+        <div>
+          <div class="s-title">Kosten pro km</div>
+          <div class="s-desc">Inkl. Aufschlag</div>
+        </div>
+        <div class="setting-input-wrap">
+          <input type="number" id="s-auftrag-km" value="0.45" step="0.01" min="0" />
+          <span class="s-unit">€</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="s-title">Aufschlag</div>
+          <div class="s-desc">Automatisch</div>
+        </div>
+        <div class="setting-input-wrap">
+          <input type="number" id="s-aufschlag" value="50" readonly />
+          <span class="s-unit">%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-label">Fahrzeug</div>
+    <div class="settings-group">
+      <div class="setting-row">
+        <div>
+          <div class="s-title">Verbrauch</div>
+          <div class="s-desc">Referenzwert</div>
+        </div>
+        <div class="setting-input-wrap">
+          <input type="number" id="s-verbrauch" value="10" step="0.1" min="0" />
+          <span class="s-unit">L/100</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="s-title">Dieselpreis</div>
+          <div class="s-desc">Aktuell</div>
+        </div>
+        <div class="setting-input-wrap">
+          <input type="number" id="s-diesel" value="1.95" step="0.01" min="0" />
+          <span class="s-unit">€/L</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveSettings()">Speichern</button>
+    <div class="divider"></div>
+    <button class="btn-danger" onclick="clearAll()">Alle Fahrten löschen</button>
+    <div style="height:20px"></div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let state = {
+  mode: 'privat', recording: false, startTime: null,
+  currentKm: 0, totalGpsKm: 0, lastPosition: null,
+  watchId: null, durationInterval: null,
+  settings: { privatKm: 0.30, auftragKm: 0.45, verbrauch: 10, diesel: 1.95 },
+  trips: []
+};
+
+function init() {
+  const s = localStorage.getItem('ft-settings');
+  if (s) state.settings = { ...state.settings, ...JSON.parse(s) };
+  const t = localStorage.getItem('ft-trips');
+  if (t) state.trips = JSON.parse(t);
+  applySettings(); updateRateDisplay(); renderHistory();
+}
+
+function showView(v, el) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(x => x.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  el.classList.add('active');
+  if (v === 'history') renderHistory();
+}
+
+function setMode(m) {
+  state.mode = m;
+  document.getElementById('btn-privat').className = 'mode-btn' + (m === 'privat' ? ' active privat' : '');
+  document.getElementById('btn-auftrag').className = 'mode-btn' + (m === 'auftrag' ? ' active auftrag' : '');
+  document.getElementById('mode-display').textContent = m === 'privat' ? 'Priv.' : 'Auftrag';
+  updateRateDisplay(); updateCostDisplay();
+}
+
+function getRate() { return state.mode === 'privat' ? state.settings.privatKm : state.settings.auftragKm; }
+
+function updateRateDisplay() {
+  const r = getRate().toFixed(2).replace('.', ',');
+  document.getElementById('rate-display').textContent = r;
+  document.getElementById('header-badge').textContent = r + ' €/km';
+}
+
+function toggleRecording() { state.recording ? stopRecording() : startRecording(); }
+
+function startRecording() {
+  state.recording = true; state.startTime = Date.now();
+  state.currentKm = 0; state.totalGpsKm = 0; state.lastPosition = null;
+
+  document.getElementById('btn-record').className = 'btn-record stop';
+  document.getElementById('btn-icon').textContent = '⏹';
+  document.getElementById('btn-label').textContent = 'Fahrt beenden';
+  document.getElementById('km-num').classList.add('recording');
+  document.getElementById('cost-live').classList.add('recording');
+
+  state.durationInterval = setInterval(updateDuration, 1000);
+
+  if (navigator.geolocation) {
+    document.getElementById('gps-dot').classList.add('active');
+    document.getElementById('gps-label').textContent = 'GPS wird gesucht…';
+    state.watchId = navigator.geolocation.watchPosition(
+      pos => {
+        document.getElementById('gps-label').textContent = 'GPS aktiv';
+        if (state.lastPosition) {
+          const d = haversine(state.lastPosition.lat, state.lastPosition.lon, pos.coords.latitude, pos.coords.longitude);
+          if (d > 0.01) { state.totalGpsKm += d; state.currentKm = state.totalGpsKm; updateDisplay(); }
+        }
+        state.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      },
+      () => {
+        document.getElementById('gps-label').textContent = 'GPS nicht verfügbar';
+        document.getElementById('gps-dot').classList.remove('active');
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+  }
+  toast('Fahrt gestartet');
+}
+
+function stopRecording() {
+  if (state.currentKm < 0.1) { toast('Zu wenig km erfasst'); resetUI(); return; }
+  saveTrip(state.currentKm, state.mode);
+  resetUI(); toast('Gespeichert ✓');
+}
+
+function resetUI() {
+  state.recording = false;
+  if (state.watchId !== null) { navigator.geolocation.clearWatch(state.watchId); state.watchId = null; }
+  clearInterval(state.durationInterval);
+  document.getElementById('btn-record').className = 'btn-record start';
+  document.getElementById('btn-icon').textContent = '▶';
+  document.getElementById('btn-label').textContent = 'Fahrt starten';
+  document.getElementById('gps-dot').classList.remove('active');
+  document.getElementById('gps-label').textContent = 'GPS bereit';
+  document.getElementById('km-num').classList.remove('recording');
+  document.getElementById('cost-live').classList.remove('recording');
+  state.currentKm = 0; state.startTime = null;
+  updateDisplay(); document.getElementById('duration').textContent = '00:00';
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateDisplay() { document.getElementById('km-num').textContent = state.currentKm.toFixed(1); updateCostDisplay(); }
+function updateCostDisplay() { document.getElementById('cost-live').textContent = fmt(state.currentKm * getRate()); }
+function updateDuration() {
+  if (!state.startTime) return;
+  const s = Math.floor((Date.now() - state.startTime) / 1000);
+  document.getElementById('duration').textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+function addManual() {
+  const val = parseFloat(document.getElementById('manual-km').value);
+  if (!val || val <= 0) { toast('km eingeben'); return; }
+  saveTrip(val, state.mode);
+  document.getElementById('manual-km').value = '';
+  toast('Gespeichert ✓');
+}
+
+function saveTrip(km, mode) {
+  const rate = mode === 'privat' ? state.settings.privatKm : state.settings.auftragKm;
+  state.trips.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    km: parseFloat(km.toFixed(1)), mode, rate,
+    cost: parseFloat((km * rate).toFixed(2))
+  });
+  localStorage.setItem('ft-trips', JSON.stringify(state.trips));
+}
+
+function renderHistory() {
+  const trips = state.trips;
+  const totalKm = trips.reduce((a,t) => a+t.km, 0);
+  const totalEur = trips.reduce((a,t) => a+t.cost, 0);
+  document.getElementById('total-count').textContent = trips.length;
+  document.getElementById('total-km').textContent = totalKm.toFixed(1);
+  document.getElementById('total-eur').textContent = totalEur.toFixed(2).replace('.',',');
+  const list = document.getElementById('trip-list');
+  if (!trips.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🛣</div><div class="empty-text">Noch keine Fahrten</div></div>`;
+    return;
+  }
+  list.innerHTML = trips.map(t => `
+    <div class="trip-item">
+      <div class="trip-dot ${t.mode}"></div>
+      <div class="trip-info">
+        <div class="trip-date">${t.date}</div>
+        <div class="trip-km">${t.km.toFixed(1)} km</div>
+        <span class="trip-mode-tag ${t.mode}">${t.mode}</span>
+      </div>
+      <div class="trip-right">
+        <div class="trip-cost">${fmt(t.cost)}</div>
+        <div class="trip-rate">${t.rate.toFixed(2).replace('.',',')} €/km</div>
+      </div>
+      <button class="btn-del" onclick="deleteTrip(${t.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function deleteTrip(id) {
+  state.trips = state.trips.filter(t => t.id !== id);
+  localStorage.setItem('ft-trips', JSON.stringify(state.trips));
+  renderHistory(); toast('Gelöscht');
+}
+
+function applySettings() {
+  document.getElementById('s-privat-km').value = state.settings.privatKm;
+  document.getElementById('s-auftrag-km').value = state.settings.auftragKm;
+  document.getElementById('s-verbrauch').value = state.settings.verbrauch;
+  document.getElementById('s-diesel').value = state.settings.diesel;
+  calcAufschlag();
+}
+
+function calcAufschlag() {
+  const p = parseFloat(document.getElementById('s-privat-km').value) || 0;
+  const a = parseFloat(document.getElementById('s-auftrag-km').value) || 0;
+  document.getElementById('s-aufschlag').value = p > 0 ? Math.round(((a-p)/p)*100) : 0;
+}
+document.getElementById('s-privat-km').addEventListener('input', calcAufschlag);
+document.getElementById('s-auftrag-km').addEventListener('input', calcAufschlag);
+
+function saveSettings() {
+  state.settings.privatKm = parseFloat(document.getElementById('s-privat-km').value) || 0.30;
+  state.settings.auftragKm = parseFloat(document.getElementById('s-auftrag-km').value) || 0.45;
+  state.settings.verbrauch = parseFloat(document.getElementById('s-verbrauch').value) || 10;
+  state.settings.diesel = parseFloat(document.getElementById('s-diesel').value) || 1.95;
+  localStorage.setItem('ft-settings', JSON.stringify(state.settings));
+  updateRateDisplay(); updateCostDisplay();
+  toast('Gespeichert ✓');
+}
+
+function clearAll() {
+  if (!confirm('Alle Fahrten wirklich löschen?')) return;
+  state.trips = []; localStorage.removeItem('ft-trips');
+  renderHistory(); toast('Alle gelöscht');
+}
+
+function fmt(val) { return val.toFixed(2).replace('.', ',') + ' €'; }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+init();
+</script>
+</body>
+</html>
